@@ -74,6 +74,15 @@ fn vert(pos: Vec3) -> Vertex {
 }
 ```
 
+## Mutability
+
+I've added mutability that follows how Rust does it.
+A normal `let name: ty;` is translated into `const ty name;`
+and a `let mut name: ty;` is translated into `ty name;`.
+This mutability is unfortunately not enforced at compile time, but
+helps to make code adhere to usual Rust rules and have any efficiency that
+using `const` in glsl brings.
+
 ## Usage
 
 There are three ways to invoke the translator.  The language syntax is exactly
