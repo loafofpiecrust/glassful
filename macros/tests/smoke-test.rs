@@ -3,14 +3,14 @@
 #![deny(warnings)]
 
 #[allow(dead_code)]
-const TEST_PROG: &'static str = glassful! {
+const TEST_PROG: (&'static str, &'static str) = glassful! {
     #![version="110"]
 
-    static foo: f32 = 3.0;
+    const foo: f32 = 3.0;
 
-    #[varying] static zed: vec2 = UNINIT;
-    #[uniform] static prev_frame: sampler2D = UNINIT;
-    #[uniform] static _p_scale: f32 = UNINIT;
+    static prev_frame: sampler2D = UNINIT;
+    static _p_scale: f32 = UNINIT;
+    static param: vec2 = UNINIT;
 
     fn complex_to_tex(p: vec2) -> vec2 {
         (0.5/_p_scale)*p + vec2(0.5, 0.5)
@@ -28,9 +28,14 @@ const TEST_PROG: &'static str = glassful! {
         check!(x) && check!(y)
     }
 
-    #[uniform] static param: vec2 = UNINIT;
 
-    fn main() {
+    #[vertex]
+    fn vert() {
+
+    }
+
+    #[fragment]
+    fn frag(zed: Vec2) {
         let color: vec3;
         let oldpoint: vec2 = complex_mul(zed, zed) + 1.6*param;
 
