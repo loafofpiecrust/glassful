@@ -62,13 +62,19 @@ fn expand(cx: &mut ExtCtxt, outer_span: Span, toks: &[ast::TokenTree])
             /*let interned = token::intern_and_get_ident(res);
             MacExpr::new(cx.expr_str(inner_span, interned))*/
             let mut sh_vec = vec![];
-            for sh in &[Some(res.0), Some(res.1), res.2] {
+            for sh in &[res.0, res.1, res.2] {
                 if let Some(sh) = sh.clone() {
                     let sh = token::intern_and_get_ident(&(sh)[..]);
                     sh_vec.push(cx.expr_str(inner_span, sh));
                 }
             }
-            MacExpr::new(cx.expr_tuple(inner_span, sh_vec))
+
+            if sh_vec.len() == 1 {
+                MacExpr::new(sh_vec[0].clone())
+            }
+            else {
+                MacExpr::new(cx.expr_tuple(inner_span, sh_vec))
+            }
         }
     }
 }

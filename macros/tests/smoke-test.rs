@@ -3,7 +3,7 @@
 #![deny(warnings)]
 
 #[allow(dead_code)]
-const TEST_PROG: (&'static str, &'static str) = glassful! {
+const TEST_PROG: &'static str = glassful! {
     #![version="110"]
 
     const foo: f32 = 3.0;
@@ -26,12 +26,6 @@ const TEST_PROG: (&'static str, &'static str) = glassful! {
         }
 
         check!(x) && check!(y)
-    }
-
-
-    #[vertex]
-    fn vert() {
-
     }
 
     #[fragment]
