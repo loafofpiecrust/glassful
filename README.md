@@ -39,6 +39,18 @@ written.
 Parameters marked with `mut` get turned into `out` values
 and are write-only. If there is a return value on the function,
 it gets turned into the very last `out` value.
+To receive return values in the next stage, simply make an input parameter
+with the name of the stage that it's coming from:
+```rs
+#[vertex]
+fn vert(pos: Vec3) -> Vec4 {
+    Vec4(pos, 1.0)
+}
+#[fragment]
+fn frag(vertex: Vec4) -> Vec4 {
+    Vec4(vertex.x, 0.4, vertex.y, 1.0)
+}
+```
 
 Statics are uniforms by default, and if you want to use other kinds, eg. varying or attributes,
 as statics, you must split the shaders into multiple invokations of glassful.
