@@ -16,15 +16,13 @@ fn vert(
 	// in
 	position: Pnt3,
 	normal: Vec3,
-	// out
-	mut vertex: Vertex,
-) {
-	vertex = Vertex(
+) -> Vertex {
+	Vertex(
 		MATRIX * Pnt4(position, 1.0),
 		Vec2(0, 0),
 		Vec4(1, 0.5, 1, 1),
 		1.2,
-	);
+	)
 }
 
 #[geometry]

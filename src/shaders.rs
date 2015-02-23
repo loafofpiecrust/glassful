@@ -73,7 +73,7 @@ pub fn translate(sess: &ParseSess,
 
     match output {
     	Some(ty) => {
-    		write!(out, "layout(location=0) out ").unwrap();
+    		write!(out, "layout(location={}) out ", mut_idx).unwrap();
     		::ty::translate(sess, out, ty);
     		write!(out, " {}", stage).unwrap();
    			if let ast::TyVec(_) = ty.node {

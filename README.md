@@ -18,6 +18,50 @@ See the [issue tracker][] and don't hesitate to send pull requests :)
 [OpenGL Shading Language]: https://www.opengl.org/documentation/glsl/
 [issue tracker]: https://github.com/kmcallister/glassful/issues
 
+## Function syntax
+
+My changes allow for the consolodation of shaders into one file or string,
+with each stage as a separate function. Each is marked with an attribute of it's
+stage name, but the function itself can be called anything.
+eg. the vertex stage could be:
+```rs
+#[vertex]
+fn vert_to_color(position: Vec3) -> Vec3 {
+    ..
+}
+```
+The geometry stage is optional of course.
+
+## Values
+
+Normal function parameters become `in` values in the order that they are
+written.
+Parameters marked with `mut` get turned into `out` values
+and are write-only. If there is a return value on the function,
+it gets turned into the very last `out` value.
+
+Statics are uniforms by default, and if you want to use other kinds, eg. varying or attributes,
+as statics, you must split the shaders into multiple invokations of glassful.
+This is because all content is copied into each glsl output shader, including all
+functions, uniforms, consts structs, etc., except for the functions that are marked as stage `main`s
+with the stage name attribute.
+
+## Structs
+
+Unfortunately, struct init syntax is currently limited to how glsl inits structs,
+with the members unnamed and in order, eg:
+```rs
+struct Vertex {
+    pos: Vec4,
+    color: Vec3,
+}
+
+#[vertex]
+fn vert(pos: Vec3) -> Vertex {
+    Vertex(Vec4(pos, 1.0), Vec3(0.0, 1.0, 0.4))
+}
+```
+
 ## Usage
 
 There are three ways to invoke the translator.  The language syntax is exactly
@@ -26,34 +70,33 @@ the same in all three cases.
 ### As a macro
 
 ```rust
-#[plugin] #[no_link] extern crate glassful_macros;
+#![plugin(glassful_macros)]
+#[macro_use] extern crate glassful_macros;
 
-const VERTEX: &'static str = glassful! {
-    #![version="110"]
+const PROGRAM: (&'static str, &'static str) = glassful! {
+    #![version="330"]
 
-    #[attribute] static position: vec2 = UNINIT;
-    #[varying]   static color:    vec3 = UNINIT;
+    const FAV_COLOR: Vec3 = Vec3(0.4, 0.2, 0.6);
+    static MATRIX: Mat4 = UNINIT;
 
-    fn main() {
-        gl_Position = vec4(position, 0.0, 1.0);
-        color = vec3(0.5*(position + vec2(1.0, 1.0)), 0.0);
+    #[vertex]
+    fn vert(position: Vec2, mut color: Vec3) {
+        gl_Position = MATRIX * Vec4(position, 0.0, 1.0);
+        color = Vec3(0.5*(position + Vec2(1.0, 1.0)), 0.0);
+    }
+
+    #[fragment]
+    fn frag(color: Vec3) {
+        gl_FragColor = Vec4(color, 1.0);
     }
 };
 
-const FRAGMENT: &'static str = glassful! {
-    #![version="110"]
-
-    #[varying] static color: vec3 = UNINIT;
-
-    fn main() {
-        gl_FragColor = vec4(color, 1.0);
-    }
-};
-
-let program = glium::Program::from_source(&display, VERTEX, FRAGMENT, None);
+let program = glium::Program::from_source(&display, PROGRAM.0, PROGRAM.1, None);
 ```
 
 See `examples/gradient/` for a full glium/glutin example.
+
+~! See `examples/random/` for a glsl 330 + parameter syntax example.
 
 ### As an external program
 
@@ -69,6 +112,11 @@ extern crate glassful;
 pub fn main() {
     let prog = io::stdin().read_to_end().unwrap();
     let prog = String::from_utf8(prog).unwrap();
-    print!("{}", glassful::translate(prog));
+    let (vert, frag, geom) = glassful::translate(prog);
+    print!("// vert\n{}\n", vert);
+    print!("// frag\n{}\n", frag);
+    if let Some(geom) = geom {
+        print!("// geom\n{}\n", geom);
+    }
 }
 ```
