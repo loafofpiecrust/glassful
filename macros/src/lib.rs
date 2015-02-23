@@ -62,9 +62,9 @@ fn expand(cx: &mut ExtCtxt, outer_span: Span, toks: &[ast::TokenTree])
             /*let interned = token::intern_and_get_ident(res);
             MacExpr::new(cx.expr_str(inner_span, interned))*/
             let mut sh_vec = vec![];
-            for sh in &[res.vertex, res.fragment, res.geometry] {
+            for sh in &[Some(res.0), Some(res.1), res.2] {
                 if let Some(sh) = sh.clone() {
-                    let sh = token::intern_and_get_ident(&(sh + &res.template[..])[..]);
+                    let sh = token::intern_and_get_ident(&(sh)[..]);
                     sh_vec.push(cx.expr_str(inner_span, sh));
                 }
             }
