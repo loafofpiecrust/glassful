@@ -1,10 +1,10 @@
-#![feature(rustc_private, core, std_misc)]
+#![feature(rustc_private)]
 #![deny(warnings)]
 
 extern crate syntax;
 
 use std::borrow::ToOwned;
-use std::thread::Thread;
+use std::thread;
 use syntax::parse;
 use syntax::ext::expand;
 use syntax::attr::AttrMetaMethods;
@@ -16,11 +16,15 @@ mod ty;
 mod fun;
 mod expr;
 mod block;
+mod shaders;
+mod data;
+
+use shaders::Shaders;
 
 const NAME: &'static str = "<glassful shader>";
 
 /// Translate a glassful program to GLSL, or panic.
-pub fn translate(source: String) -> String {
+pub fn translate(source: String) -> (String, String, Option<String>) {
     // parse
     let sess = parse::new_parse_sess();
     let diag = &sess.span_diagnostic;
@@ -54,26 +58,30 @@ pub fn translate(source: String) -> String {
 
     // translate!
 
-    let mut out = match glsl_version {
+    let out = match glsl_version {
         Some(v) => format!("#version {}\n\n", v),
         None => "".to_owned(),
     };
 
+    let mut shaders = Shaders::new(out);
+
     for item in krate.module.items.iter() {
-        item::translate(&sess, &mut out, &**item);
+        item::translate(&sess, &mut shaders, &**item);
     }
 
     diag.handler.abort_if_errors();
 
-    out
+    (shaders.vertex(), shaders.fragment(), shaders.geometry())
 }
 
 /// Translate a glassful program to GLSL, or return `None'.
 ///
 /// Because the `libsyntax` parser uses `panic!` internally,
 /// this spawns a new thread for the duration of the call.
-pub fn try_translate(source: String) -> Option<String> {
-    Thread::scoped(move || {
-        translate(source)
-    }).join().ok()
+pub fn try_translate(source: String) -> Option<(String, String, Option<String>)> {
+    let result = translate(source);
+    if thread::panicking() {
+        None
+    }
+    else { Some(result) }
 }

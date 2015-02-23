@@ -59,6 +59,13 @@ fn translate_let(sess: &ParseSess,
         }
     };
 
+    match loc.pat.node {
+        ast::PatIdent(ast::BindByValue(ast::MutImmutable), _, _) => {
+            write!(out, "const ").unwrap()
+        },
+        _ => ()
+    }
+
     ::ty::translate(sess, out, ty);
     write!(out, " {}", name).unwrap();
     if let Some(init) = loc.init.as_ref() {

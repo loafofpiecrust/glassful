@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::slice::SliceExt;
 use syntax::ast;
 use syntax::parse::ParseSess;
 use syntax::attr::AttrMetaMethods;
@@ -18,13 +19,13 @@ pub fn translate(sess: &ParseSess,
                 diag.span_err(ty.span, "can't translate qualified / parametrized name");
             }
             Some(name) => {
-                let name = match &name[] {
-                    "f32" => "float",
-                    name => name,
-                };
-                write!(out, "{}", name).unwrap();
+                write!(out, "{}", ::util::convert_type(&name)).unwrap()
             }
         },
+
+        ast::TyVec(ref t) => {
+            translate(sess, out, t)
+        }
 
         _ => {
             diag.span_err(ty.span, "can't translate this sort of type");

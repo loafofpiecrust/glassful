@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use syntax::ast;
 use syntax::parse::ParseSess;
-use syntax::attr::AttrMetaMethods;
+//use syntax::attr::AttrMetaMethods;
 
 pub fn translate(sess: &ParseSess,
                  out: &mut String,
@@ -9,7 +9,7 @@ pub fn translate(sess: &ParseSess,
                  inputs: &[ast::Arg],
                  output: Option<&ast::Ty>,
                  block: &ast::Block) {
-    let diag = &sess.span_diagnostic;
+    //let diag = &sess.span_diagnostic;
 
     match output {
         None => write!(out, "void").unwrap(),
@@ -21,13 +21,14 @@ pub fn translate(sess: &ParseSess,
         if i != 0 {
             write!(out, ", ").unwrap();
         }
-        ::ty::translate(sess, out, &**ty);
+        ::var::translate(sess, out, &[], ::util::pat_to_ident(&*pat).unwrap(), &*ty, None, true);
+        /*::ty::translate(sess, out, &**ty);
         match ::util::pat_to_var(&**pat) {
             Some(v) => write!(out, " {}", v).unwrap(),
             _ => {
                 diag.span_err(pat.span, "can't translate this sort of pattern");
             }
-        }
+        }*/
     }
     write!(out, ") {{\n").unwrap();
 

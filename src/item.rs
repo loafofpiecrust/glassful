@@ -2,8 +2,11 @@ use std::fmt::Write;
 use syntax::ast;
 use syntax::abi;
 use syntax::parse::ParseSess;
+use syntax::attr::AttrMetaMethods;
 
-pub fn translate(sess: &ParseSess, out: &mut String, item: &ast::Item) {
+use shaders::Shaders;
+
+pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
     let diag = &sess.span_diagnostic;
 
     match item.vis {
@@ -18,21 +21,17 @@ pub fn translate(sess: &ParseSess, out: &mut String, item: &ast::Item) {
                 _ => diag.span_err(item.span, "variables are implicitly mutable"),
             }
 
-            ::var::translate(sess, out, &item.attrs[], item.ident,
-                             &**ty, Some(&**expr));
+            ::var::translate(sess, &mut out.template, &item.attrs[..], item.ident,
+                             &**ty, Some(&**expr), false);
         }
 
         ast::ItemConst(ref ty, ref expr) => {
-            write!(out, "const ").unwrap();
-            ::var::translate(sess, out, &item.attrs[], item.ident,
-                             &**ty, Some(&**expr));
+            write!(&mut out.template, "const ").unwrap();
+            ::var::translate(sess, &mut out.template, &item.attrs[..], item.ident,
+                             &**ty, Some(&**expr), false);
         }
 
         ast::ItemFn(ref decl, unsafety, abi, ref generics, ref block) => {
-            for attr in item.attrs.iter() {
-                diag.span_err(attr.span, "no function attributes are supported");
-            }
-
             let ast::FnDecl { ref inputs, ref output, variadic }
                 = **decl;
 
@@ -63,11 +62,51 @@ pub fn translate(sess: &ParseSess, out: &mut String, item: &ast::Item) {
                 ast::Return(ref t) => Some(&**t),
             };
 
-            ::fun::translate(sess, out, item.ident, &inputs[], output, &**block);
+            for attr in item.attrs.iter() {
+                let name = &*attr.name();
+                match name {
+                    "vertex" => {
+                        if out.vertex.is_none() {
+                            out.vertex = Some(String::new());
+                        }
+                        let vert: &mut String = out.vertex.as_mut().unwrap();
+                        ::shaders::translate(sess, vert, item.ident, "vertex", &inputs[..], output, &**block);
+                        return;
+                    },
+                    "fragment" => {
+                        if out.fragment.is_none() {
+                            out.fragment = Some(String::new());
+                        }
+                        let vert: &mut String = out.fragment.as_mut().unwrap();
+                        ::shaders::translate(sess, vert, item.ident, "fragment", &inputs[..], output, &**block);
+                        return;
+                    },
+                    "geometry" => {
+                        if out.geometry.is_none() {
+                            out.geometry = Some(String::new());
+                        }
+                        let vert: &mut String = out.geometry.as_mut().unwrap();
+                        ::shaders::translate(sess, vert, item.ident, "geometry", &inputs[..], output, &**block);
+                        return;
+                    },
+                    _ => ()
+                }
+                //diag.span_err(attr.span, "no function attributes are supported");
+            }
+
+            ::fun::translate(sess, &mut out.template, item.ident, &inputs[..], output, &**block);
         }
 
         ast::ItemMac(_) => {
             diag.span_bug(item.span, "macros should be gone by now");
+        }
+
+        ast::ItemStruct(ref def, ref generics) => {
+            if generics.is_parameterized() {
+                diag.span_err(item.span, "can't translate generic functions");
+            }
+
+            ::data::translate(sess, &mut out.template, &item.attrs[..], item.ident, &def.fields[..]);
         }
 
         _ => {

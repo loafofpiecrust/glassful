@@ -57,11 +57,11 @@ pub fn translate(sess: &ParseSess,
 
         ast::ExprPath(ref p) => match ::util::simple_path(p) {
             Some(name) => {
-                let name = match &name[] {
+                let name = match &name[..] {
                     "mod_" => "mod",
                     name => name,
                 };
-                write!(out, "{}", name).unwrap();
+                write!(out, "{}", ::util::convert_type(&name.to_string())).unwrap();
             }
 
             _ => {
@@ -141,6 +141,13 @@ pub fn translate(sess: &ParseSess,
 
         ast::ExprMac(_) => {
             diag.span_bug(expr.span, "macros should be gone by now");
+        }
+
+        ast::ExprIndex(ref outside, ref inside) => {
+            translate(sess, out, outside);
+            write!(out, "[").unwrap();
+            translate(sess, out, inside);
+            write!(out, "]").unwrap();
         }
 
         _ => {
