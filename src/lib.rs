@@ -24,7 +24,7 @@ use shaders::Shaders;
 const NAME: &'static str = "<glassful shader>";
 
 /// Translate a glassful program to GLSL, or panic.
-pub fn translate(source: String) -> (String, String, Option<String>) {
+pub fn translate(source: String) -> (Option<String>, Option<String>, Option<String>) {
     // parse
     let sess = parse::new_parse_sess();
     let diag = &sess.span_diagnostic;
@@ -69,16 +69,22 @@ pub fn translate(source: String) -> (String, String, Option<String>) {
         item::translate(&sess, &mut shaders, &**item);
     }
 
-    diag.handler.abort_if_errors();
 
-    (shaders.vertex(), shaders.fragment(), shaders.geometry())
+    let result = (
+        shaders.vertex(),
+        shaders.fragment(),
+        shaders.geometry(),
+    );
+
+    diag.handler.abort_if_errors();
+    result
 }
 
 /// Translate a glassful program to GLSL, or return `None'.
 ///
 /// Because the `libsyntax` parser uses `panic!` internally,
 /// this spawns a new thread for the duration of the call.
-pub fn try_translate(source: String) -> Option<(String, String, Option<String>)> {
+pub fn try_translate(source: String) -> Option<(Option<String>, Option<String>, Option<String>)> {
     let result = translate(source);
     if thread::panicking() {
         None

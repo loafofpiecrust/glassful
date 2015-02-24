@@ -19,18 +19,12 @@ impl Shaders {
 		}
 	}
 
-	pub fn vertex(&self) -> String {
-		match self.vertex {
-			Some(ref sh) => self.template.clone() + &sh[..],
-			None => String::new()
-		}
+	pub fn vertex(&self) -> Option<String> {
+		self.vertex.clone().map(|sh| self.template.clone() + &sh[..])
 	}
 
-	pub fn fragment(&self) -> String {
-		match self.fragment {
-			Some(ref sh) => self.template.clone() + &sh[..],
-			None => String::new()
-		}
+	pub fn fragment(&self) -> Option<String> {
+		self.fragment.clone().map(|sh| self.template.clone() + &sh[..])
 	}
 
 	pub fn geometry(&self) -> Option<String> {

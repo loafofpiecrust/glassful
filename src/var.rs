@@ -21,8 +21,16 @@ pub fn translate(sess: &ParseSess,
         let mut out_idx = 0;
         match name {
             // many others: https://www.opengl.org/wiki/Type_Qualifier_%28GLSL%29
-            "varying" | "attribute" | "uniform" => {
+            "uniform" => {
                 write!(out, "{} ", name).unwrap();
+            }
+            "attribute" => {
+                write!(out, "{} ", name).unwrap();
+                in_idx += 1;
+            }
+            "varying" => {
+                write!(out, "{} ", name).unwrap();
+                out_idx += 1;
             }
             "input" => {
                 write!(out, "layout(location={}) in ", in_idx).unwrap();
