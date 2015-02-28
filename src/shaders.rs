@@ -2,61 +2,59 @@ use std::fmt::Write;
 use syntax::ast;
 use syntax::parse::ParseSess;
 
-pub struct Shaders {
-    pub template: String,
+pub struct Program {
     pub vertex: Option<String>,
     pub fragment: Option<String>,
-    pub geometry: Option<String>,
-}
-
-impl Shaders {
-	pub fn new(out: String) -> Self {
-		Shaders {
-			template: out,
-			vertex: None,
-			fragment: None,
-			geometry: None,
-		}
-	}
-
-	pub fn vertex(&self) -> Option<String> {
-		self.vertex.clone().map(|sh| self.template.clone() + &sh[..])
-	}
-
-	pub fn fragment(&self) -> Option<String> {
-		self.fragment.clone().map(|sh| self.template.clone() + &sh[..])
-	}
-
-	pub fn geometry(&self) -> Option<String> {
-		self.geometry.clone().map(|sh| self.template.clone() + &sh[..])
-	}
+    pub geometry: Option<String>
 }
 
 pub fn translate(sess: &ParseSess,
 				 out: &mut String,
 				 name: ast::Ident,
 				 stage: &'static str,
+                 _: &[&str],
 				 inputs: &[ast::Arg],
 				 output: Option<&ast::Ty>,
 				 block: &ast::Block,
 				) {
     //let diag = &sess.span_diagnostic;
 
+    /*let last_stage = match stage {
+        "fragment" if stages.contains(&"geometry") => Some("geometry"),
+        "fragment" if stages.contains(&"vertex") => Some("vertex"),
+        "geometry" if stages.contains(&"vertex") => Some("vertex"),
+        _ => None,
+    };*/
+
     let mut idx = 0;
     let mut mut_idx = 0;
-    for arg in inputs.iter() {
+    for (_, arg) in inputs.iter().enumerate() {
         /*if i != 0 {
             write!(out, ", ").unwrap();
         }*/
 
+        /*if let Some(last_stage) = last_stage {
+            if i == 0 {
+                write!(out, "in {};\n", last_stage).unwrap();
+                idx += 1;
+                continue;
+            }
+        }*/
+
         match arg.pat.node.clone() {
         	ast::PatIdent(ast::BindByValue(ast::MutMutable), _, _) => {
-        		write!(out, "layout(location={}) out ", mut_idx).unwrap();
-        		mut_idx += 1;
+                if stage == "fragment" {
+                    write!(out, "layout(location={}) ", mut_idx).unwrap();
+                }
+        		write!(out, "out ").unwrap();
+                mut_idx += 1;
         	}
         	_ => {
-		        write!(out, "layout(location={}) in ", idx).unwrap();
-		        idx += 1;
+                if stage == "vertex" {
+                    write!(out, "layout(location={}) ", idx).unwrap();
+                }
+		        write!(out, "in ").unwrap();
+                idx += 1;
         	}
         }
         //::ty::translate(sess, out, &*arg.ty);
@@ -66,17 +64,20 @@ pub fn translate(sess: &ParseSess,
     }
 
     match output {
-    	Some(ty) => {
-    		write!(out, "layout(location={}) out ", mut_idx).unwrap();
-    		::ty::translate(sess, out, ty);
-    		write!(out, " {}", stage).unwrap();
-   			if let ast::TyVec(_) = ty.node {
-   				write!(out, "[]").unwrap();
-   			}
-   			write!(out, ";\n").unwrap();
-    		//::var::translate(sess, out, &[], ast::Ident::new(stage.to_string()), ty, None);
-    	}
-    	_ => ()
+        Some(ty) => {
+            if stage == "fragment" {
+                write!(out, "layout(location={}) ", mut_idx).unwrap();
+            }
+            write!(out, "out ").unwrap();
+            ::ty::translate(sess, out, ty);
+            write!(out, " {}", stage).unwrap();
+            if let ast::TyVec(_) = ty.node {
+                write!(out, "[]").unwrap();
+            }
+            write!(out, ";\n").unwrap();
+            //::var::translate(sess, out, &[], ast::Ident::new(stage.to_string()), ty, None);
+        }
+        _ => ()
     }
 
 
@@ -94,6 +95,12 @@ pub fn translate(sess: &ParseSess,
         }
         ::var::translate(sess, out, &[], ::util::pat_to_ident(&*pat).unwrap(), &*ty, None, true);
     }*/
+    /*if last_stage.is_some() {
+        if inputs.len() > 0 {
+            let ast::Arg { ref ty, ref pat, .. } = inputs[0];
+            ::var::translate(sess, out, &[], ::util::pat_to_ident(&*pat).unwrap(), &*ty, None, true);
+        }
+    }*/
     write!(out, ") {{\n").unwrap();
     ::block::translate(sess, out, block, true);
     write!(out, "}}\n\n").unwrap();
@@ -102,8 +109,11 @@ pub fn translate(sess: &ParseSess,
     if output.is_some() {
     	write!(out, "{} = ", stage).unwrap();
     }
-    write!(out, "{}();\n", name.as_str()).unwrap();
-    write!(out, "}}\n").unwrap();
+    write!(out, "{}(", name.as_str()).unwrap();
+    /*if let Some(last_stage) = last_stage {
+        write!(out, "{}", last_stage).unwrap();
+    }*/
+    write!(out, ");\n}}\n").unwrap();
 
 	/*write!(out, "void main() {{\n").unwrap();
 	::block::translate(sess, out, block, true);

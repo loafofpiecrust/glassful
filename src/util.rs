@@ -26,6 +26,7 @@ pub fn pat_to_ident(p: &ast::Pat) -> Option<ast::Ident> {
 }
 
 pub fn convert_type(orig: &String) -> String {
+    println!("input type: {}", orig);
     let name = match &orig[..] {
         "f32" => "float",
         "f64" => "double",
@@ -33,17 +34,26 @@ pub fn convert_type(orig: &String) -> String {
         "u32" => "uint",
         name => name,
     };
-    // convert Uppercase types to lowercase
-    match name {
-        n if n.starts_with("Vec")
-           | n.starts_with("Mat")
-           => n.to_ascii_lowercase(),
-        n if n.starts_with("Pnt") || n.starts_with("Rot") => {
-            let mut start = "vec".to_string();
-            let mut n = n.to_string();
-            start.push(n.pop().unwrap());
-            start
-        }
-        n => n.to_string()
+    // convert Uppercase+Rust types to lowercase+glsl
+    match name.to_ascii_lowercase() {
+        ref n if n.len() == 4 && (n.starts_with("pnt") || n.starts_with("rot")) => {
+            if !(*n.as_bytes().last().unwrap() as char).is_numeric() {
+                name.to_string()
+            }
+            else {
+                let mut start = "vec".to_string();
+                start.push(*n.as_bytes().last().unwrap() as char);
+                start
+            }
+        },
+        ref n if n.len() == 4 && (n.starts_with("vec") || n.starts_with("mat")) => {
+            if !(*n.as_bytes().last().unwrap() as char).is_numeric() {
+                name.to_string()
+            }
+            else {
+                n.clone()
+            }
+        },
+        _ => name.to_string(),
     }
 }

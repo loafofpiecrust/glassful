@@ -141,3 +141,8 @@ pub fn main() {
     }
 }
 ```
+
+### TODO
+ - Make inputs and outputs more ergonomic, so that, for example, a
+    geometry shader could be added to a program that has a vertex
+    and fragment shader already, without changing anything.

@@ -50,12 +50,13 @@ pub fn translate(sess: &ParseSess,
             ast::LitFloat(ref f, _) | ast::LitFloatUnsuffixed(ref f) => {
                 write!(out, "{}", f).unwrap();
             }
+            ast::LitBool(val) => write!(out, "{}", val).unwrap(),
             _ => {
                 diag.span_err(expr.span, "can't translate this literal");
             }
         },
 
-        ast::ExprPath(ref p) => match ::util::simple_path(p) {
+        ast::ExprPath(_, ref p) => match ::util::simple_path(p) {
             Some(name) => {
                 let name = match &name[..] {
                     "mod_" => "mod",

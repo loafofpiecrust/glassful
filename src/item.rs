@@ -4,9 +4,9 @@ use syntax::abi;
 use syntax::parse::ParseSess;
 use syntax::attr::AttrMetaMethods;
 
-use shaders::Shaders;
+use ::Program;
 
-pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
+pub fn translate(sess: &ParseSess, out: &mut String, prog: &mut Program, stages: &[&str], item: &ast::Item) {
     let diag = &sess.span_diagnostic;
 
     match item.vis {
@@ -21,13 +21,13 @@ pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
                 _ => diag.span_err(item.span, "variables are implicitly mutable"),
             }
 
-            ::var::translate(sess, &mut out.template, &item.attrs[..], item.ident,
+            ::var::translate(sess, out, &item.attrs[..], item.ident,
                              &**ty, Some(&**expr), false);
         }
 
         ast::ItemConst(ref ty, ref expr) => {
-            write!(&mut out.template, "const ").unwrap();
-            ::var::translate(sess, &mut out.template, &item.attrs[..], item.ident,
+            write!(out, "const ").unwrap();
+            ::var::translate(sess, out, &item.attrs[..], item.ident,
                              &**ty, Some(&**expr), false);
         }
 
@@ -66,27 +66,45 @@ pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
                 let name = &*attr.name();
                 match name {
                     "vertex" => {
-                        if out.vertex.is_none() {
-                            out.vertex = Some(String::new());
+                        if prog.vertex.is_none() {
+                            prog.vertex = Some(String::new());
                         }
-                        let vert: &mut String = out.vertex.as_mut().unwrap();
-                        ::shaders::translate(sess, vert, item.ident, "vertex", &inputs[..], output, &**block);
+                        let vert: &mut String = prog.vertex.as_mut().unwrap();
+                        ::shaders::translate(sess, vert, item.ident, "vertex", stages, &inputs[..], output, &**block);
                         return;
                     },
                     "fragment" => {
-                        if out.fragment.is_none() {
-                            out.fragment = Some(String::new());
+                        if prog.fragment.is_none() {
+                            prog.fragment = Some(String::new());
                         }
-                        let vert: &mut String = out.fragment.as_mut().unwrap();
-                        ::shaders::translate(sess, vert, item.ident, "fragment", &inputs[..], output, &**block);
+                        let vert: &mut String = prog.fragment.as_mut().unwrap();
+                        ::shaders::translate(sess, vert, item.ident, "fragment", stages, &inputs[..], output, &**block);
                         return;
                     },
                     "geometry" => {
-                        if out.geometry.is_none() {
-                            out.geometry = Some(String::new());
+                        if prog.geometry.is_none() {
+                            prog.geometry = Some(String::new());
                         }
-                        let vert: &mut String = out.geometry.as_mut().unwrap();
-                        ::shaders::translate(sess, vert, item.ident, "geometry", &inputs[..], output, &**block);
+                        let sh: &mut String = prog.geometry.as_mut().unwrap();
+
+                        if let Some(args) = attr.meta_item_list() {
+                            for (i, arg) in args.iter().enumerate() {
+                                match arg.node {
+                                    ast::MetaWord(ref name) if i == 0 =>
+                                        write!(sh, "layout({}) in;\n", name).unwrap(),
+                                    ast::MetaNameValue(ref name, ref val) if i == 1 => {
+                                        match val.node {
+                                            ast::LitStr(ref val, _) =>
+                                                write!(sh, "layout({}, max_vertices = {}) out;\n", name, val.parse::<u32>().unwrap()).unwrap(),
+                                            _ => (),
+                                        }
+                                    },
+                                    _ => (),
+                                }
+                            }
+                        }
+
+                        ::shaders::translate(sess, sh, item.ident, "geometry", stages, &inputs[..], output, &**block);
                         return;
                     },
                     _ => ()
@@ -94,7 +112,7 @@ pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
                 //diag.span_err(attr.span, "no function attributes are supported");
             }
 
-            ::fun::translate(sess, &mut out.template, item.ident, &inputs[..], output, &**block);
+            ::fun::translate(sess, out, item.ident, &inputs[..], output, &**block);
         }
 
         ast::ItemMac(_) => {
@@ -106,7 +124,7 @@ pub fn translate(sess: &ParseSess, out: &mut Shaders, item: &ast::Item) {
                 diag.span_err(item.span, "can't translate generic functions");
             }
 
-            ::data::translate(sess, &mut out.template, &item.attrs[..], item.ident, &def.fields[..]);
+            ::data::translate(sess, out, &item.attrs[..], item.ident, &def.fields[..]);
         }
 
         _ => {

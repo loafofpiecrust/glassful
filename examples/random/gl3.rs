@@ -18,14 +18,14 @@ fn vert(
 	normal: Vec3,
 ) -> Vertex {
 	Vertex(
-		MATRIX * Pnt4(position, 1.0),
+		Matrix * Pnt4(position, 1.0),
 		Vec2(0, 0),
 		Vec4(1, 0.5, 1, 1),
 		1.2,
 	)
 }
 
-#[geometry]
+#[geometry(points, triangle_strip="4")]
 fn geom(vertex: [Vertex], mut geometry: Vertex) {
 	let size: f32 = vertex[0].size;
 	let right: Vec3 = Vec3(1,0,0) * size;
@@ -40,7 +40,6 @@ fn geom(vertex: [Vertex], mut geometry: Vertex) {
 }
 
 #[fragment]
-fn frag(geometry: Vertex,
-		mut color: Vec4) {
-	color = Vec4(vertex.position.x, 1.0, 0.5, 1.0)
+fn frag(geometry: Vertex) -> Vec4 {
+	Vec4(geometry.position.x, 1.0, 0.5, 1.0)
 }
