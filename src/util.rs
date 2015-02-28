@@ -26,7 +26,6 @@ pub fn pat_to_ident(p: &ast::Pat) -> Option<ast::Ident> {
 }
 
 pub fn convert_type(orig: &String) -> String {
-    println!("input type: {}", orig);
     let name = match &orig[..] {
         "f32" => "float",
         "f64" => "double",
