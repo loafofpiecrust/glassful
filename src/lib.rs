@@ -27,6 +27,8 @@ pub struct Program {
     pub vertex: Option<String>,
     pub fragment: Option<String>,
     pub geometry: Option<String>,
+    pub uniforms: Vec<(String, String)>,
+    pub inputs: Vec<(String, String)>,
 }
 
 impl Program {
@@ -35,6 +37,8 @@ impl Program {
             vertex: None,
             fragment: None,
             geometry: None,
+            uniforms: Vec::new(),
+            inputs: Vec::new(),
         }
     }
 
@@ -117,9 +121,7 @@ pub fn translate(source: String) -> Program {
 /// Because the `libsyntax` parser uses `panic!` internally,
 /// this spawns a new thread for the duration of the call.
 pub fn try_translate(source: String) -> Option<Program> {
-    let result = translate(source);
-    if thread::panicking() {
-        None
-    }
-    else { Some(result) }
+    Some(
+        thread::scoped(move || {translate(source)})
+            .join())
 }

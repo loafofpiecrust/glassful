@@ -18,7 +18,7 @@ fn vert(
 	normal: Vec3,
 ) -> Vertex {
 	Vertex(
-		Matrix * Pnt4(position, 1.0),
+		MATRIX * Pnt4(position, 1.0),
 		Vec2(0, 0),
 		Vec4(1, 0.5, 1, 1),
 		1.2,

@@ -10,10 +10,11 @@ extern crate glassful;
 
 use syntax::ast;
 use syntax::parse::token;
-use syntax::codemap::Span;
-use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, DummyResult};
+use syntax::codemap::{Span, Spanned};
+use syntax::ext::base::{ExtCtxt, MacEager, MacResult, DummyResult};
 use syntax::ext::build::AstBuilder;
 use rustc::plugin::Registry;
+use syntax::util::small_vector::SmallVector;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -59,22 +60,51 @@ fn expand(cx: &mut ExtCtxt, outer_span: Span, toks: &[ast::TokenTree])
             DummyResult::expr(outer_span)
         }
         Some(res) => {
-            /*let interned = token::intern_and_get_ident(res);
-            MacExpr::new(cx.expr_str(inner_span, interned))*/
             let mut sh_vec = vec![];
             for sh in &[res.vertex, res.fragment, res.geometry] {
                 if let Some(sh) = sh.clone() {
-                    let sh = token::intern_and_get_ident(&(sh)[..]);
+                    let sh = token::intern_and_get_ident(&sh[..]);
                     sh_vec.push(cx.expr_str(inner_span, sh));
                 }
             }
 
             if sh_vec.len() == 1 {
-                MacExpr::new(sh_vec[0].clone())
+                return MacEager::expr(sh_vec[0].clone())
             }
             else {
-                MacExpr::new(cx.expr_vec(inner_span, sh_vec))
+                return MacEager::expr(cx.expr_vec(inner_span, sh_vec))
             }
+            
+            let spanned = |it| {
+                Spanned {
+                    span: inner_span,
+                    node: it,
+                }
+            };
+            let f32_id = cx.ty_ident(inner_span, cx.ident_of("f32"));
+            let items = vec![
+                cx.item_struct(inner_span, cx.ident_of("Uniforms"), ast::StructDef {
+                    fields: res.uniforms.iter().map(|uniform| {
+                        let chars: Vec<char> = uniform.1.chars().collect();
+                        let size = match &chars[..] {
+                            ['v','e','c', size] => size as usize,
+                            _ => 3,
+                        };
+                        spanned(ast::StructField_ {
+                            kind: ast::NamedField(cx.ident_of(&uniform.0[..]), ast::Visibility::Public),
+                            id: 0,
+                            ty: cx.ty(inner_span, ast::TyFixedLengthVec(f32_id.clone(), cx.expr_usize(inner_span, size))),
+                            attrs: Vec::new(),
+                        })
+                    }).collect(),
+                    ctor_id: None,
+                }),
+            ];
+
+            MacEager::items(SmallVector::many(items))
+
+            /*let interned = token::intern_and_get_ident(&res[..]);
+            MacEager::expr(cx.expr_str(inner_span, interned))*/
         }
     }
 }

@@ -20,7 +20,7 @@ pub fn translate(sess: &ParseSess,
             }
             Some(name) => {
                 write!(out, "{}", ::util::convert_type(&name)).unwrap()
-            }
+			}
         },
 
         ast::TyVec(ref t) => {

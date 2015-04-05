@@ -1,73 +1,3 @@
-input type: Mat4
-input type: Mat4
-input type: Pnt4
-input type: Vec2
-input type: Vec4
-input type: f32
-output type: float
-input type: Pnt3
-input type: Vec3
-input type: Vertex
-output type: Vertex
-input type: Vertex
-output type: Vertex
-input type: Vertex
-output type: Vertex
-input type: Matrix
-input type: Pnt4
-input type: position
-output type: position
-input type: Vec2
-input type: Vec4
-input type: Vertex
-output type: Vertex
-input type: Vertex
-output type: Vertex
-input type: f32
-output type: float
-input type: vertex
-output type: vertex
-input type: Vec3
-input type: Vec3
-input type: size
-output type: size
-input type: Vec3
-input type: Vec3
-input type: size
-output type: size
-input type: Vec3
-input type: Vec4
-input type: view
-output type: view
-input type: vertex
-output type: vertex
-input type: geometry
-output type: geometry
-input type: vertex
-output type: vertex
-input type: geometry
-output type: geometry
-input type: PROJECTION
-output type: PROJECTION
-input type: Pnt4
-input type: pos
-output type: pos
-input type: right
-output type: right
-input type: up
-output type: up
-input type: geometry
-output type: geometry
-input type: Vec2
-input type: EmitVertex
-output type: EmitVertex
-input type: Vertex
-output type: Vertex
-input type: Vec4
-input type: Vec4
-input type: Vec4
-input type: geometry
-output type: geometry
 // vertex
 #version 330
 
@@ -83,7 +13,7 @@ layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;
 out Vertex vertex;
 Vertex vert() {
-return Vertex((matrix * vec4(position, 1.0)), vec2(0, 0), vec4(1, 0.5, 1, 1), 1.2);
+return Vertex((Matrix * vec4(position, 1.0)), vec2(0, 0), vec4(1, 0.5, 1, 1), 1.2);
 }
 
 void main() {
