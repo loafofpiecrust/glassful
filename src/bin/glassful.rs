@@ -1,13 +1,13 @@
-#![feature(old_io)]
 #![deny(warnings)]
-
-use std::old_io as io;
 
 extern crate glassful;
 
+use std::io;
+use std::io::Read;
+
 pub fn main() {
-    let prog = io::stdin().read_to_end().unwrap();
-    let prog = String::from_utf8(prog).unwrap();
+    let mut prog = String::new();
+    io::stdin().read_to_string(&mut prog).unwrap();
     let prog = glassful::translate(prog);
     if let Some(vert) = prog.vertex {
 	    print!("// vertex\n{}\n", vert);

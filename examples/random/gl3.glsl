@@ -1,3 +1,4 @@
+     Running `target/debug/glassful`
 // vertex
 #version 330
 
@@ -8,12 +9,13 @@ struct Vertex {
 	vec2 tex_coords;
 	vec4 color;
 	float size;
+	isampler2D texture;
 };
-layout(location=0) in vec3 position;
+layout(location=0) in dvec3 position;
 layout(location=1) in vec3 normal;
 out Vertex vertex;
 Vertex vert() {
-return Vertex((Matrix * vec4(position, 1.0)), vec2(0, 0), vec4(1, 0.5, 1, 1), 1.2);
+return Vertex((MATRIX * vec4(position, 1.0)), vec2(0, 0), vec4(1, 0.5, 1, 1), 1.2);
 }
 
 void main() {
@@ -30,6 +32,7 @@ struct Vertex {
 	vec2 tex_coords;
 	vec4 color;
 	float size;
+	isampler2D texture;
 };
 in Vertex geometry;
 layout(location=0) out vec4 fragment;
@@ -51,6 +54,7 @@ struct Vertex {
 	vec2 tex_coords;
 	vec4 color;
 	float size;
+	isampler2D texture;
 };
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
@@ -70,4 +74,3 @@ EmitVertex();
 void main() {
 geom();
 }
-

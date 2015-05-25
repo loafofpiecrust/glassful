@@ -1,12 +1,25 @@
-use syntax::ast;
+use syntax::{ast};
 use std::borrow::ToOwned;
-use std::ascii::AsciiExt;
 
 pub fn simple_path(p: &ast::Path) -> Option<String> {
     match &p.segments[..] {
-        [ref single] if single.parameters.is_empty()
-            => Some(single.identifier.as_str().to_owned()),
-        _ => None,
+        [ref single] => {
+            let name = single.identifier.as_str().to_owned();
+            if single.parameters.has_types() {
+                match single.parameters.types()[0].node {
+                    ast::TyPath(_, ref p) => Some(match &*simple_path(p).unwrap() {
+                        "u32"|"usize" => "u",
+                        "i32"|"isize" => "i",
+                        "f64" => "d",
+                        "bool" => "b",
+                        _ => ""
+                    }.to_owned() + &*name),
+                    _ => None
+                }
+            }
+            else { Some(name) }
+        },
+        _ => None
     }
 }
 
@@ -29,23 +42,22 @@ pub fn convert_type(orig: &String) -> String {
     let name = match &orig[..] {
         "f32" => "float",
         "f64" => "double",
-        "i32" => "int",
-        "u32" => "uint",
+        "i32"|"isize" => "int",
+        "u32"|"usize" => "uint",
         name => name,
     };
+
     // convert Uppercase+Rust types to lowercase+glsl
-    match name.to_ascii_lowercase() {
-        ref n if n.len() == 4 && (n.starts_with("pnt") || n.starts_with("rot")) => {
+    match name.to_lowercase() {
+        ref n if n.len() >= 4 && (n.contains("pnt") || n.contains("rot")) => {
             if !(*n.as_bytes().last().unwrap() as char).is_numeric() {
-                name.to_string()
+                name.to_owned()
             }
             else {
-                let mut start = "vec".to_string();
-                start.push(*n.as_bytes().last().unwrap() as char);
-                start
+                name.to_lowercase().replace("pnt", "vec").replace("rot", "vec")
             }
         },
-        ref n if n.len() == 4 && (n.starts_with("vec") || n.starts_with("mat")) => {
+        ref n if n.len() >= 4 && (n.contains("vec") || n.contains("mat")) => {
             if !(*n.as_bytes().last().unwrap() as char).is_numeric() {
                 name.to_string()
             }
@@ -53,6 +65,7 @@ pub fn convert_type(orig: &String) -> String {
                 n.clone()
             }
         },
-        _ => name.to_string(),
+        ref n if n.contains("sampler") => name[0..2].to_lowercase() + &name[2..],
+        _ => name.to_owned()
     }
 }

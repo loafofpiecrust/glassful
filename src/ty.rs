@@ -1,5 +1,4 @@
 use std::fmt::Write;
-use std::slice::SliceExt;
 use syntax::ast;
 use syntax::parse::ParseSess;
 use syntax::attr::AttrMetaMethods;
